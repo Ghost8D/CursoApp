@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CursoApp.Core/CursoApp.Core.csproj" />
+  <Project Path="CursoApp/CursoApp.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
+</Solution>
