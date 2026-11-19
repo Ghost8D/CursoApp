@@ -25,6 +25,7 @@ namespace CursoApp
             builder.Services.AddSingleton<UsuarioBusiness>();
             builder.Services.AddSingleton<LoginViewModel>();
             builder.Services.AddSingleton<Login>();
+            builder.Services.AddSingleton<MainPage>();
 
             return builder.Build();
         }

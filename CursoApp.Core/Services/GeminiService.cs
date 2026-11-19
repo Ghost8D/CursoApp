@@ -2,6 +2,7 @@
 using Google.GenAI;
 using Google.GenAI.Types;
 using Microsoft.Extensions.AI;
+using System.ComponentModel;
 using System.Text.Json;
 using static CursoApp.Core.Enums.ListaAccionesLens;
 using IOFile = System.IO.File;
@@ -103,24 +104,81 @@ namespace CursoApp.Core.Services
             }
         }
 
-        public Task<string> EnviarMensajeAsync(string mensaje, string modelo)
+        public async Task<string> EnviarMensajeAsync(string mensaje, string modelo)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var historial = CargarHistorial();
+                var userContent = new Content
+                {
+                    Role = "user",
+                    Parts = new List<Part> { Part.FromText(mensaje) }
+                };
+                historial.Add(userContent);
+
+                var response = await _client.Models.GenerateContentAsync(
+                    model: modelo,
+                    contents: historial
+                );
+
+                var respuestaFinal = string.IsNullOrWhiteSpace(response.Text) ? "Lo siento, no pude generar una respuesta." : response.Text;
+                historial.Add(new Content { Role = "model", Parts = new List<Part> { Part.FromText(respuestaFinal) } });
+                GuardarHistorial(historial);
+                return respuestaFinal;
+            }
+            catch(Exception ex)
+            {
+                throw new Exception($"Ocurrio un error al enviar el mensaje: {ex.Message}", ex);
+            }
         }
 
-        public Task<byte[]> GenerarRespuestaVoz(string texto, string modelo)
+        public async Task<byte[]> GenerarRespuestaVoz(string texto, string modelo)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var respustavoz = await _client.Models.GenerateContentAsync(
+                    model: modelo,
+                    contents: new List<Content>
+                    {
+                        new Content
+                        {
+                            Role = "user",
+                            Parts = new List<Part>
+                            {
+                                Part.FromText($"Lee en voz alta y de forma natural el siguiente texto: {texto}")
+                            }
+                        }
+                    });
+                var audio = respustavoz.Candidates?.FirstOrDefault()?.Content.Parts.FirstOrDefault(p => p.InlineData != null);
+                return audio?.InlineData?.Data ?? Array.Empty<byte>();
+            }
+            catch(Exception ex)
+            {
+                throw new Exception($"Ocurrio un error al generar la voz {ex.Message}");
+            }
         }
 
-        public Task<List<string>> ObtenerModelosDisponiblesAsync()
+        public async Task<List<string>> ObtenerModelosDisponiblesAsync()
         {
-            throw new NotImplementedException();
+            var models = await _client.Models.ListAsync();
+            var nombres = new List<string>();
+
+            await foreach (var model in models)
+            {
+                if (string.IsNullOrEmpty(model.Name))
+                {
+                    nombres.Add(model.Name);
+                }
+            }
+            return nombres;
         }
 
         public void ReiniciarConversacion()
         {
-            throw new NotImplementedException();
+            if (IOFile.Exists(_rutaArchivoJson))
+            {
+                IOFile.Delete(_rutaArchivoJson);
+            }
         }
         #endregion
     }
