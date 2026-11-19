@@ -160,17 +160,25 @@ namespace CursoApp.Core.Services
 
         public async Task<List<string>> ObtenerModelosDisponiblesAsync()
         {
-            var models = await _client.Models.ListAsync();
-            var nombres = new List<string>();
-
-            await foreach (var model in models)
+            try
             {
-                if (string.IsNullOrEmpty(model.Name))
+                var models = await _client.Models.ListAsync();
+                var nombres = new List<string>();
+
+                await foreach (var model in models)
                 {
-                    nombres.Add(model.Name);
+                    if (!string.IsNullOrEmpty(model.Name))
+                    {
+                        nombres.Add(model.Name);
+                    }
                 }
+                return nombres;
             }
-            return nombres;
+            catch (Exception ex)
+            {
+                return new List<string> { "gemini-3.6-flash", "gemini-2.5-pro" };
+            }
+            
         }
 
         public void ReiniciarConversacion()
